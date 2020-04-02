@@ -1,14 +1,14 @@
 import coreapi
 from django.shortcuts import render
 from rest_framework import viewsets
-from .models import AffinityGroupView, Contact, Filetuple
+from .models import AffinityGroupView, Contact, Filetuple, Counter
 from .serializers import AffinityGroupViewSerializer, ContactSerializer, FiletupleSerializer
 from rest_framework import generics
 from rest_framework import mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponse
-import random 
+import random
 import requests
 
 
@@ -22,6 +22,7 @@ class ContactEndpoint(viewsets.ModelViewSet):
     serializer_class = ContactSerializer
 
 class FiletupleEndpoint(viewsets.ModelViewSet):
+
     queryset = Filetuple.objects.all()
     serializer_class = FiletupleSerializer
 
@@ -50,7 +51,7 @@ class InsertFile(APIView):
         hashValue = self.hash(param)
         print(hashValue)
 
-        #finding the target affinity group for file. 
+        #finding the target affinity group for file.
         target_group = Contact.objects.all().filter(groupID = hashValue).order_by('rtt')
         result = []
         if not target_group:  # group info not present at current node.
@@ -98,6 +99,5 @@ class InsertFile(APIView):
             if not file_homenode:
                 return HttpResponse(message="Home node not found",status=500)
             else:
-
-        
-        return HttpResponse(status=404)
+                return HttpResponse(status=404)
+    
