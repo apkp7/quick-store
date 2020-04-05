@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import AffinityGroupView,Contact,Filetuple
+from .models import AffinityGroupView,Contact,Filetuple, File
 
 class AffinityGroupViewSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,3 +15,13 @@ class FiletupleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Filetuple
         fields = '__all__'
+
+class FileUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = File
+        fields = '__all__'
+
+class FileDownloadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = File
+        fields = ['file_obj']

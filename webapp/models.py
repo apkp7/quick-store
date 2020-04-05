@@ -17,3 +17,8 @@ class Filetuple(models.Model):
     fileName = models.CharField(max_length=100)
     IP = models.CharField(max_length=40)
     port = models.CharField(max_length=5)
+
+class File(models.Model):
+    file_obj = models.FileField()
+    file_name = models.CharField(max_length=100)
+ 

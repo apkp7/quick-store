@@ -9,5 +9,8 @@ router.register('Filetuple',views.FiletupleEndpoint)
 urlpatterns = [
     path('',include(router.urls)),
     path('admin/webapp/search-node/',views.SearchNode.as_view()),
-    path('admin/webapp/insert-file/',views.InsertFile.as_view())
+    path('admin/webapp/upload/',views.UploadFile.as_view()),
+    path('admin/webapp/save-file/',views.SaveFile.as_view()),
+    path('admin/webapp/download',views.DownloadFile.as_view()),
+    path('admin/webapp/get-file/',views.GetFiletuple.as_view()),
 ]
