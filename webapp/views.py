@@ -1,7 +1,7 @@
 import coreapi
 from django.shortcuts import render
 from rest_framework import viewsets
-from .models import AffinityGroupView, Contact, Filetuple, File
+from .models import AffinityGroupView, Contact, Filetuple, Counter, File
 from .serializers import AffinityGroupViewSerializer, ContactSerializer, FiletupleSerializer, FileUploadSerializer, FileDownloadSerializer
 from rest_framework import generics
 from rest_framework import mixins

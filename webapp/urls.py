@@ -1,6 +1,7 @@
 from django.urls import path,include
 from rest_framework import routers
-from . import views
+from . import views, gossip, tasks
+
 
 router =  routers.DefaultRouter()
 router.register('AffinityGroupView',views.AffinityGroupViewEndpoint)
@@ -13,4 +14,6 @@ urlpatterns = [
     path('admin/webapp/save-file/',views.SaveFile.as_view()),
     path('admin/webapp/download',views.DownloadFile.as_view()),
     path('admin/webapp/get-file/',views.GetFiletuple.as_view()),
+    path('admin/webapp/insert-file/',views.InsertFile.as_view()),
+    path('heartbeat', gossip.listen_heartbeat),
 ]
