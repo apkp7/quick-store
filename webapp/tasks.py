@@ -38,20 +38,32 @@ def update_heartbeat():
         filetuple.save()
 
 
+def construct_payload(data, TTL):
+    payload = {}
+    if not data:
+            payload['TTL'] = TTL
+            payload['nodes'] = [entry for entry in AffinityGroupView.objects.all().values()]
+            payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
+    else:
+        payload = data   
+        hbt = Counter.objects.get(name='heartbeat').count
+        for node in payload['nodes']:
+            if node["IP"] == my_ip:
+                node['heartbeatCount'] = hbt
+        for filetuple in payload['filetuples']:
+            if filetuple["IP"] == my_ip:
+                filetuple['heartbeatCount'] = hbt
+    return payload
+
+
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_heartbeat", ignore_result=True)
 def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count()), data={}):
     if int(TTL) > 0:
         fan_out = configs['FAN_OUT']
         visited = []
-        payload = {}
         # import pdb; pdb.set_trace()
         update_heartbeat()
-        payload = data               
-        payload['TTL'] = TTL
-        if 'nodes' not in payload or not payload['nodes']:
-            payload['nodes'] = [entry for entry in AffinityGroupView.objects.all().values()]
-        if 'filetuples' not in payload or not payload['filetuples']:
-            payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
+        payload = construct_payload(data, TTL)
         _iter = 0
         exception = False
         while _iter < fan_out:
