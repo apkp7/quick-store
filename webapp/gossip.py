@@ -12,7 +12,7 @@ import requests
 from celery import Celery
 import sys
 import json 
-# import pdb; pdb.set_trace()
+import pdb
 
 # TODO: create one model for my_ip
 my_ip = requests.get('https://api.ipify.org').text
@@ -20,7 +20,7 @@ my_ip = requests.get('https://api.ipify.org').text
 @csrf_exempt
 def listen_heartbeat(request):
     body = json.loads(request.body.decode('utf-8'))
-    # import pdb; pdb.set_trace()
+    # pdb.set_trace()
     for node in body['nodes']:
         if node["IP"] != my_ip:
             node_from_db = AffinityGroupView.objects.filter(IP=node["IP"])
@@ -56,5 +56,5 @@ def listen_heartbeat(request):
                 filetuple_from_db[0].timestamp = Counter.objects.get(name='heartbeat').count
                 filetuple_from_db[0].save()
     TTL = int(body['TTL'])
-    disseminate_heartbeat(TTL - 1, body)
+    # disseminate_heartbeat(TTL - 1, body)
     return HttpResponse(str(TTL), status=200)
