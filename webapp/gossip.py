@@ -56,5 +56,5 @@ def listen_heartbeat(request):
                 filetuple_from_db[0].timestamp = Counter.objects.get(name='heartbeat').count
                 filetuple_from_db[0].save()
     TTL = int(body['TTL'])
-    # disseminate_heartbeat(TTL - 1, body)
+    disseminate_heartbeat(TTL - 1, body)
     return HttpResponse(str(TTL), status=200)

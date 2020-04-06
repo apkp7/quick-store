@@ -41,9 +41,8 @@ def update_heartbeat():
 def construct_payload(data, TTL):
     payload = {}
     if not data:
-            payload['TTL'] = TTL
-            payload['nodes'] = [entry for entry in AffinityGroupView.objects.all().values()]
-            payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
+        payload['nodes'] = [entry for entry in AffinityGroupView.objects.all().values()]
+        payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
     else:
         payload = data   
         hbt = Counter.objects.get(name='heartbeat').count
@@ -53,6 +52,7 @@ def construct_payload(data, TTL):
         for filetuple in payload['filetuples']:
             if filetuple["IP"] == my_ip:
                 filetuple['heartbeatCount'] = hbt
+    payload['TTL'] = TTL
     return payload
 
 
@@ -80,15 +80,22 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count()), dat
             if not exception:
                 exception = False
                 t2 = time.time()
-                node.rtt = min(node.rtt, t2 - t1)
+                node.rtt = max(node.rtt, t2 - t1)
                 node.save()
             visited.append(node.IP)
             _iter = _iter + 1
         
 
-""" @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="detect_failure", ignore_result=True)
+""" @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
-    pass """
+    now = Counter.objects.get(name='heartbeat').count
+    # TODO: remember and mark node if not updated within T_FAIL
+    mem_list = AffinityGroupView.objects.all()
+    filetuples = Filetuple.objects.all()
+    for member in mem_list:
+        if now - member.timestamp > (2 * configs['T_FAIL']):
+            print('FAILURE! Send request') 
+"""
 
 
 @periodic_task(run_every=1.0, name="increment_heartbeat", ignore_result=True)
