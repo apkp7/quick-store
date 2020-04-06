@@ -53,6 +53,7 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count()), dat
         if 'filetuples' not in payload or not payload['filetuples']:
             payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
         _iter = 0
+        exception = False
         while _iter < fan_out:
             node = node_with_min_rtt(visited)
             if node == None:
@@ -63,11 +64,12 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count()), dat
             # TODO: catch requests.exceptions.OSError,Timeout,ConnectionError
             except Exception as e:
                 print(e)
-                visited.append(node.IP)
-                continue               
-            t2 = time.time()
-            node.rtt = max(node.rtt, t2 - t1)
-            node.save()
+                exception = True
+            if not exception:
+                exception = False
+                t2 = time.time()
+                node.rtt = min(node.rtt, t2 - t1)
+                node.save()
             visited.append(node.IP)
             _iter = _iter + 1
         
