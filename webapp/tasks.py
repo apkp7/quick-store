@@ -20,12 +20,14 @@ with open('webapp/gossip.yaml', 'r') as file:
 my_ip = requests.get('https://api.ipify.org').text
 
 
+
 def node_with_min_rtt(visited):
     nodes = AffinityGroupView.objects.order_by('rtt')
     for node in nodes:
         if node.IP not in visited and node.IP != my_ip:
             return node
     return None
+
 
 def update_heartbeat():
     my_mem_list = AffinityGroupView.objects.get(IP=my_ip)
@@ -68,8 +70,9 @@ def construct_payload(data, TTL):
     return payload
 
 
+
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_heartbeat", ignore_result=True)
-def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count()), data={}):
+def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if AffinityGroupView.objects.all().count() > 0 else 8), data={}):
     if int(TTL) > 0:
         fan_out = configs['FAN_OUT']
         visited = []
@@ -98,7 +101,7 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count()), dat
 
 
 
-@periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_heartbeat", ignore_result=True)
+@periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_contact_heartbeat", ignore_result=True)
 def disseminate_contact_heartbeat():
     if len(Contact.objects.filter(actual=True)):    
         update_contact_heartbeat()
@@ -132,6 +135,7 @@ def detect_failure():
         if now - member.timestamp > (2 * configs['T_FAIL']):
             print('FAILURE! Send request') 
 """
+
 
 
 @periodic_task(run_every=1.0, name="increment_heartbeat", ignore_result=True)

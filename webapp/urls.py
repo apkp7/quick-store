@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework import routers
 from . import views
-from . import gossip, tasks
+from . import gossip
 
 
 router =  routers.DefaultRouter()
