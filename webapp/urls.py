@@ -16,5 +16,5 @@ urlpatterns = [
     path('admin/webapp/download',views.DownloadFile.as_view()),
     path('admin/webapp/get-file/',views.GetFiletuple.as_view()),
     path('heartbeat', gossip.listen_heartbeat),
-    # path('disseminate', tasks.disseminate_heartbeat),
+    path('contact-heartbeat', gossip.intergroup_hearbeat),
 ]
