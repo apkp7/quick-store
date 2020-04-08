@@ -56,6 +56,7 @@ def construct_payload(data, TTL):
     payload = {}
     if not data:
         payload['nodes'] = [entry for entry in AffinityGroupView.objects.all().values()]
+        payload['contacts'] = [entry for entry in Contact.objects.all().values()]
         payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
     else:
         payload = data   
@@ -63,6 +64,9 @@ def construct_payload(data, TTL):
         for node in payload['nodes']:
             if node["IP"] == my_ip:
                 node['heartbeatCount'] = hbt
+        for contact in payload['contacts']:
+            if contact["IP"] == my_ip:
+                contact['heartbeatCount'] = hbt
         for filetuple in payload['filetuples']:
             if filetuple["IP"] == my_ip:
                 filetuple['heartbeatCount'] = hbt
@@ -72,15 +76,16 @@ def construct_payload(data, TTL):
 
 
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_heartbeat", ignore_result=True)
-def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if AffinityGroupView.objects.all().count() > 0 else 8), data={}):
-    if int(TTL) > 0:
+def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if AffinityGroupView.objects.all().count() > 2 else 2), data={}):
+    TTL = int(TTL)
+    if TTL > 0:
         fan_out = configs['FAN_OUT']
         visited = []
         update_heartbeat()
         payload = construct_payload(data, TTL)
         _iter = 0
         exception = False
-        while _iter < fan_out:
+        while _iter < fan_out and AffinityGroupView.objects.all().count():
             node = node_with_min_rtt(visited)
             if node == None:
                 break            
