@@ -130,7 +130,7 @@ def disseminate_contact_heartbeat():
 
         
 
-""" @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
+@periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
     now = Misc.objects.get(name='heartbeat').count
     # TODO: remember and mark node if not updated within T_FAIL
@@ -139,7 +139,19 @@ def detect_failure():
     for member in mem_list:
         if now - member.timestamp > (2 * configs['T_FAIL']):
             print('FAILURE! Send request') 
-"""
+    for filetuple in filetuples:
+        if now - filetuple.timestamp > (2 * configs['T_FAIL']):
+            print('FAILURE! Send request') 
+
+
+
+@periodic_task(run_every=configs['T_FAIL'], name="detect_contact_failure", ignore_result=True)
+def detect_contact_failure():
+    now = Misc.objects.get(name='heartbeat').count
+    contacts = Contact.objects.all()
+    for contact in contacts:
+        if now - contact.timestamp > (2 * configs['T_FAIL']):
+            print('FAILURE! Send request') 
 
 
 
