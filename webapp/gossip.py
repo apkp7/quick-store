@@ -42,7 +42,7 @@ def listen_heartbeat(request):
                 node_from_db[0].save()
     for contact in body['contacts']:
         if contact["IP"] != my_ip:
-            node_from_db = AffinityGroupView.objects.filter(IP=contact["IP"])
+            node_from_db = Contact.objects.filter(IP=contact["IP"])
             if not node_from_db:
                 # TODO: raise contact failure alarm?
                 new_node = Contact(
