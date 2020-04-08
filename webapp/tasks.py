@@ -46,9 +46,9 @@ def update_contact_heartbeat():
     my_contact = Contact.objects.filter(IP=my_ip)
     if not my_contact:
         hbt = Misc.objects.get(name='heartbeat').count
-        my_contact.heartbeatCount = hbt
-        my_contact.timestamp = hbt
-        my_contact.save()
+        my_contact[0].heartbeatCount = hbt
+        my_contact[0].timestamp = hbt
+        my_contact[0].save()
 
 
 
