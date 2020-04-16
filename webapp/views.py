@@ -41,25 +41,30 @@ class FileUtility:
         return 4
 
     def get_node_from_destination_affinityGroup(self,param):
-        hashValue = self.hash(param)
+        hashValue = param
         #finding the target affinity group for file. 
-        target_group = Contact.objects.all().filter(groupID = hashValue).order_by('rtt')
-        result = []
-        if not target_group:  # group info not present at current node.
-            queryset = AffinityGroupView.objects.all()            
-            for node in queryset:
-                ip = node.IP
-                port = node.port
-                try:
-                    result = requests.get(self.http + ip + ":"+ port + self.path_search_node + str(hashValue),timeout =(0.1,1))
-                except Exception as e:
-                    print(e)
-                else:
-                    break
-        if result:
-            return result.json()
-        else:
-            return list()
+        target_group = Contact.objects.all().filter(groupID = hashValue)
+
+        return target_group.json()
+        # result = []
+        # if not target_group:  # group info not present at current node.
+        #     queryset = AffinityGroupView.objects.all()            
+        #     for node in queryset:
+        #         ip = node.IP
+        #         port = node.port
+        #         try:
+        #             result = requests.get(self.http + ip + ":"+ port + self.path_search_node + str(hashValue),timeout =(0.1,1))
+        #         except Exception as e:
+        #             print(e)
+        #         else:
+        #             break
+        #     if result:
+        #         return result.json()
+        #     else:
+        #         return list()
+        # else:
+        #     return target_group[0]
+        
     
     def get_file_homenode(self,affinityGroup_node_contact):
         print(affinityGroup_node_contact)
@@ -73,19 +78,6 @@ class FileUtility:
         home_node = random.choice(result.json())
         return home_node
 
-    def get_file_homenode_download(self,affinityGroup_node_contact):
-        print(affinityGroup_node_contact)
-        ip = affinityGroup_node_contact['IP']
-        port = affinityGroup_node_contact['port']
-        result = []
-        try:
-            result = requests.get(self.http + ip + ":"+ port + self.path_get_affinity_group_view)
-        except Exception as e:
-            print(e)
-        home_node = random.choice(result.json())
-        return home_node
-
-
 class SearchNode(generics.ListAPIView):
     serializer_class = ContactSerializer
 
@@ -95,6 +87,15 @@ class SearchNode(generics.ListAPIView):
         result = queryset.filter(groupID = param)
         return result
 
+class GetAffinityGroup(APIView,FileUtility):
+
+    def get(self,request):
+        queryset = Contact.objects.all()
+        param = self.request.query_params.get('groupID','')
+        result = self.get_node_from_destination_affinityGroup(param)
+        serializer = ContactSerializer
+        result = serializer(result).data
+        return Response(result)
 
 class GetFiletuple(generics.ListAPIView):
 
@@ -108,6 +109,9 @@ class GetFiletuple(generics.ListAPIView):
         print(result)
         return result
 
+class Ping(APIView):
+    def get(self,reuest):
+        return HttpResponse(status=200)
 
 class SaveFile(APIView):
 
@@ -146,7 +150,8 @@ class UploadFile(APIView,FileUtility):
         serializer = FileUploadSerializer(data = request.data )
         if not serializer.is_valid():
             return HttpResponse(status=400)
-        node_destination_affinityGroup = self.get_node_from_destination_affinityGroup(filename)
+        groupID = self.hash(filename)
+        node_destination_affinityGroup = self.get_node_from_destination_affinityGroup(groupID)
         if node_destination_affinityGroup:
             file_homenode = self.get_file_homenode(dict(node_destination_affinityGroup[0]))
             if not file_homenode:
@@ -158,7 +163,6 @@ class UploadFile(APIView,FileUtility):
                 url = self.http + str(ip) + ":"+ str(port) + self.path_save_file
                 files = {'file_obj': request.data['file_obj']}
                 try:
-                    # import pdb; pdb.set_trace()
                     result = requests.post(url ,files=files , data =values)
                 except Exception as e:
                     print(e)
@@ -176,7 +180,8 @@ class DownloadFile(APIView,FileUtility):
     path_get_file_touple = "/admin/webapp/get-file/"
     def get(self,request):
         filename = self.request.query_params.get('fileName','')
-        node_destination_affinityGroup = self.get_node_from_destination_affinityGroup(filename)
+        groupID = self.hash(filename)
+        node_destination_affinityGroup = self.get_node_from_destination_affinityGroup(groupID)
         if node_destination_affinityGroup:
             # get the home node which contains the file.
             ip = dict(node_destination_affinityGroup[0])['IP']
