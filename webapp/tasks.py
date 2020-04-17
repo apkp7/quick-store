@@ -130,6 +130,7 @@ def disseminate_contact_heartbeat():
 
         
 
+""" 
 @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
     now = Misc.objects.get(name='heartbeat').count
@@ -152,7 +153,7 @@ def detect_contact_failure():
     for contact in contacts:
         if now - contact.timestamp > (2 * configs['T_FAIL']):
             print('FAILURE! Send request') 
-
+"""
 
 
 @periodic_task(run_every=1.0, name="increment_heartbeat", ignore_result=True)
