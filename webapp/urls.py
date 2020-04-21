@@ -1,9 +1,8 @@
 from django.urls import path,include
 from rest_framework import routers
 from . import views
-from .models import AffinityGroupView, Contact, Filetuple, Counter, File
-# from . import gossip, tasks
-
+from . import gossip
+from . import node
 
 router =  routers.DefaultRouter()
 router.register('AffinityGroupView',views.AffinityGroupViewEndpoint)
@@ -18,5 +17,9 @@ urlpatterns = [
     path('admin/webapp/get-file/',views.GetFiletuple.as_view()),
     path('admin/webapp/get-affinity-group/',views.GetAffinityGroup.as_view()),
     path('admin/webapp/ping/',views.Ping.as_view()),
-    # path('heartbeat', gossip.listen_heartbeat),
+    path('heartbeat', gossip.listen_heartbeat),
+    path('contact-heartbeat', gossip.intergroup_hearbeat),
+    path('admin/webapp/check_node',node.check_node),
+    path('admin/webapp/add_first_node',node.add_first_node),
+    path('admin/webapp/add_node',node.add_node),
 ]
