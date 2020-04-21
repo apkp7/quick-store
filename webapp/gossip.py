@@ -27,7 +27,6 @@ def listen_heartbeat(request):
         if node["IP"] != my_ip:
             node_from_db = AffinityGroupView.objects.filter(IP=node["IP"])
             if not node_from_db:
-                # TODO: raise node failure alarm?
                 new_node = AffinityGroupView(
                                 IP=node["IP"],
                                 port=node["port"],
@@ -36,29 +35,37 @@ def listen_heartbeat(request):
                                 timestamp=curr_time
                             )
                 new_node.save()
-            elif node_from_db[0].heartbeatCount < node["heartbeatCount"]:
-                node_from_db[0].heartbeatCount = node["heartbeatCount"]
-                node_from_db[0].timestamp = curr_time
-                node_from_db[0].save()
+            else:
+                if node_from_db[0].heartbeatCount < node["heartbeatCount"]:
+                    node_from_db[0].heartbeatCount = node["heartbeatCount"]
+                    node_from_db[0].timestamp = curr_time
+                    node_from_db[0].isFailed = False                
+                    node_from_db[0].save()
+                elif node["isFailed"]:
+                    node_from_db[0].isFailed = True
+                    node_from_db[0].save()
     for contact in body['contacts']:
         if contact["IP"] != my_ip:
             node_from_db = Contact.objects.filter(IP=contact["IP"])
             if not node_from_db:
-                # TODO: raise contact failure alarm?
                 new_node = Contact(
                                 groupID=contact["groupID"],
                                 IP=contact["IP"],
                                 port=contact["port"],
                                 heartbeatCount=contact["heartbeatCount"],
                                 rtt=0.0,
-                                timestamp=curr_time,
-                                actual=False
+                                timestamp=curr_time
                             )
                 new_node.save()
-            elif node_from_db[0].heartbeatCount < contact["heartbeatCount"]:
-                node_from_db[0].heartbeatCount = contact["heartbeatCount"]
-                node_from_db[0].timestamp = curr_time
-                node_from_db[0].save()
+            else:
+                if node_from_db[0].heartbeatCount < contact["heartbeatCount"]:
+                    node_from_db[0].heartbeatCount = contact["heartbeatCount"]
+                    node_from_db[0].timestamp = curr_time
+                    node_from_db[0].isFailed = False                
+                    node_from_db[0].save()
+                elif contact["isFailed"]:
+                    node_from_db[0].isFailed = True
+                    node_from_db[0].save()
     for filetuple in body['filetuples']:
         if filetuple["IP"] != my_ip:
             # TODO: enforce unique filenames?
@@ -72,10 +79,16 @@ def listen_heartbeat(request):
                                 timestamp=curr_time
                             )
                 new_filetuple.save()
-            elif filetuple_from_db[0].heartbeatCount < filetuple["heartbeatCount"]:
-                filetuple_from_db[0].heartbeatCount = filetuple["heartbeatCount"]
-                filetuple_from_db[0].timestamp = curr_time
-                filetuple_from_db[0].save()
+            else:
+                if filetuple_from_db[0].heartbeatCount < filetuple["heartbeatCount"]:
+                    filetuple_from_db[0].heartbeatCount = filetuple["heartbeatCount"]
+                    filetuple_from_db[0].timestamp = curr_time
+                    filetuple_from_db[0].isFailed = False                
+                    filetuple_from_db[0].save()
+                elif filetuple["isFailed"]:
+                    filetuple_from_db[0].isFailed = True
+                    filetuple_from_db[0].save()
+
     TTL = int(body['TTL'])
     disseminate_heartbeat(TTL - 1, body)
     return HttpResponse(str(TTL), status=200)
@@ -105,3 +118,13 @@ def intergroup_hearbeat(request):
                 node_from_db[0].timestamp = curr_time
                 node_from_db[0].save()
     return HttpResponse(status=200)
+
+
+
+def delete_node(request):
+    body = json.loads(request.body.decode('utf-8'))
+    for node_ip in body['nodes']:
+        AffinityGroupView.objects.filter(IP=node_ip).delete()
+        Filetuple.objects.filter(IP=node_ip).delete()
+    for contact_ip in body['contacts']:
+        Contact.objects.filter(IP=contact_ip).delete()

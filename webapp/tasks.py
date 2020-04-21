@@ -29,6 +29,7 @@ def node_with_min_rtt(visited):
     return None
 
 
+
 def update_heartbeat():
     my_mem_list = AffinityGroupView.objects.get(IP=my_ip)
     my_mem_list.heartbeatCount = Misc.objects.get(name='heartbeat').count
@@ -42,6 +43,7 @@ def update_heartbeat():
 
 
 
+
 def update_contact_heartbeat():
     my_contact = Contact.objects.filter(IP=my_ip)
     if my_contact:
@@ -49,6 +51,7 @@ def update_contact_heartbeat():
         my_contact[0].heartbeatCount = hbt
         my_contact[0].timestamp = hbt
         my_contact[0].save()
+
 
 
 
@@ -72,6 +75,7 @@ def construct_payload(data, TTL):
                 filetuple['heartbeatCount'] = hbt
     payload['TTL'] = TTL
     return payload
+
 
 
 
@@ -106,6 +110,7 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if Af
 
 
 
+
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_contact_heartbeat", ignore_result=True)
 def disseminate_contact_heartbeat():
     if len(Contact.objects.filter(actual=True)):    
@@ -114,6 +119,7 @@ def disseminate_contact_heartbeat():
         exception = False
         contacts = Contact.objects.all()
         payload['contacts'] = [entry for entry in contacts.values()]
+        
         for contact in contacts: 
             t1 = time.time()
             try:
@@ -130,30 +136,54 @@ def disseminate_contact_heartbeat():
 
         
 
-""" 
+
 @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
     now = Misc.objects.get(name='heartbeat').count
-    # TODO: remember and mark node if not updated within T_FAIL
     mem_list = AffinityGroupView.objects.all()
     filetuples = Filetuple.objects.all()
+    nodes=[]
     for member in mem_list:
         if now - member.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request') 
+            if member.IP not in nodes:
+                nodes.append(member.IP)
+        elif now - member.timestamp > configs['T_FAIL']:
+            member.isFailed = True
+
+    now = Misc.objects.get(name='heartbeat').count
     for filetuple in filetuples:
         if now - filetuple.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request') 
+            if filetuple.IP not in nodes:
+                nodes.append(filetuple.IP)
+        elif now - filetuple.timestamp > configs['T_FAIL']:
+            filetuple.isFailed = True
+
+    if nodes:
+        payload = {}
+        payload['nodes'] = nodes
+        for member in mem_list:
+            if member.IP not in nodes:
+                try:
+                    res = requests.post('http://' + member.IP + ':' + member.port + '/delete-node', json.dumps(payload))
+                # TODO: catch requests.exceptions.OSError,Timeout,ConnectionError
+                except Exception as e:
+                    print(e)
+    for node_ip in nodes:
+        AffinityGroupView.objects.filter(IP=node_ip).delete()
+        Filetuple.objects.filter(IP=node_ip).delete()
+        Contact.objects.filter(IP=node_ip).delete()
+    
 
 
 
-@periodic_task(run_every=configs['T_FAIL'], name="detect_contact_failure", ignore_result=True)
+""" @periodic_task(run_every=configs['T_FAIL'], name="detect_contact_failure", ignore_result=True)
 def detect_contact_failure():
     now = Misc.objects.get(name='heartbeat').count
     contacts = Contact.objects.all()
     for contact in contacts:
         if now - contact.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request') 
-"""
+            print('FAILURE! Send request')  """
+
 
 
 @periodic_task(run_every=1.0, name="increment_heartbeat", ignore_result=True)

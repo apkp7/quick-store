@@ -16,6 +16,7 @@ urlpatterns = [
     path('admin/webapp/download',views.DownloadFile.as_view()),
     path('admin/webapp/get-file/',views.GetFiletuple.as_view()),
     path('heartbeat', gossip.listen_heartbeat),
+    path('delete-node', gossip.delete_node),
     path('contact-heartbeat', gossip.intergroup_hearbeat),
     path('admin/webapp/check_node',node.check_node),
     path('admin/webapp/add_first_node',node.add_first_node),
