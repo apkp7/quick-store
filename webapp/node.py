@@ -5,6 +5,7 @@ import hashlib
 import requests
 import pdb
 
+my_ip = requests.get('https://api.ipify.org').text
 
 # number of affinity groups in system
 totalNumberOfGroups = 3
@@ -19,7 +20,7 @@ def getHashValue(ip):
     # for char in hashString:
     #     asciiValue += ord(char)
     # return asciiValue%totalNumberOfGroups
-    return 1
+    return 2
 
 
 
@@ -30,11 +31,10 @@ def check_node(request):
 @csrf_exempt
 def update_groupId_in_misc(request):
     pdb.set_trace()
-    groupId = request.POST.get('groupId','')
     misc = Misc.objects.get(name = "heartbeat")
-    misc.groupID = groupId
+    misc.groupID = getHashValue(my_ip)
     misc.save()
-
+    return HttpResponse(status=200)
 
 
 #api to add first node in a new affinity group
@@ -69,7 +69,7 @@ def add_node(request):
     if newNodeGroupId == existingNodeGroupId:
         pdb.set_trace()
         try:
-            requests.post("http://" + newNodeIp + ":" + port+ "/admin/webapp/update_groupid", data={"groupId":str(newNodeGroupId)})
+            requests.post("http://" + newNodeIp + ":" + port+ "/admin/webapp/update_groupid")
         except Exception as ex:
             print(ex)
         AffinityGroupView.objects.create(IP=newNodeIp, port=port)
