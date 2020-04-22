@@ -31,8 +31,9 @@ def node_with_min_rtt(visited):
 
 
 def update_heartbeat():
-    my_mem_list = AffinityGroupView.objects.get(IP=my_ip)
+    my_mem_list = AffinityGroupView.objects.filter(IP=my_ip)
     if my_mem_list:
+        my_mem_list = my_mem_list[0]
         my_mem_list.heartbeatCount = Misc.objects.get(name='heartbeat').count
         my_mem_list.timestamp = Misc.objects.get(name='heartbeat').count
         my_mem_list.save()
