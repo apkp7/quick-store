@@ -76,7 +76,6 @@ def add_node(request):
             response = requests.post(url , data = data)
         except Exception as e:
             print(e)      
-        status = add_new_affinity_group(newNodeIp,newNodeGroupId,port)
         AffinityGroupView.objects.create(IP=newNodeIp, port=port, timestamp=Misc.objects.get(name = "heartbeat").count)
         return HttpResponse("Node with IP = " + newNodeIp +" added in affinity group " + str(newNodeGroupId), status=200)
 
