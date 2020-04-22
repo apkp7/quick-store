@@ -47,7 +47,6 @@ def add_first_node(request):
     AffinityGroupView.objects.create(IP=ip, port=port)
     Contact.objects.create(groupID=groupId, IP=ip, port=port, actual = True)
     misc = Misc.objects.get(name = "heartbeat")
-    # pdb.set_trace()
     misc.groupID = groupId
     misc.save()
     return HttpResponse("First Node, IP " + ip + " in Affinity Group " + str(groupId) + " added",status=200)
@@ -80,20 +79,20 @@ def add_node(request):
         target_group = Contact.objects.filter(groupID=str(newNodeGroupId)).order_by('rtt')
         #If this affinity group does not exists
         if not target_group:
-            pdb.set_trace()
             contact = Contact.objects.filter(groupID=existingNodeGroupId)
             if contact:
                 contact = contact[0]
-                url = "http://"+ contact.IP + ":" + contact.port + "/Contact"
-                data = {'groupID' : str(newNodeGroupId) , 'IP': newNodeIp, 'port': '8000', 'actual' : True}
+                url = "http://"+ contact.IP + ":" + contact.port + "/Contact/"
+                data = {'groupID': str(newNodeGroupId) , 'IP': newNodeIp, 'port': '8000', 'actual' : True}
                 try:
-                    response = request.post(url , data = data )
+                    response = requests.post(url , data = data )
                 except Exception as e:
                     print(e)        
                 status = add_new_affinity_group(newNodeIp,newNodeGroupId,port)
                 if status == 200:
                     message = "New affinity group + " + str(newNodeGroupId) + " added in network IP = " + newNodeIp
         else:
+            pdb.set_trace()
             contactNodeIP = target_group[0].IP
             contactNodePort = target_group[0].port
             status = add_node_in_existing_affinity_group(newNodeIp, port, contactNodeIP, contactNodePort)
