@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/webapp/check_node',node.check_node),
     path('admin/webapp/add_first_node',node.add_first_node),
     path('admin/webapp/add_node',node.add_node),
+    path('admin/webapp/update_groupid',node.update_groupId_in_misc),
 ]

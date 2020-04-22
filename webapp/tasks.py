@@ -142,13 +142,15 @@ def detect_failure():
     now = Misc.objects.get(name='heartbeat').count
     mem_list = AffinityGroupView.objects.all()
     filetuples = Filetuple.objects.all()
-    nodes=[]
+    nodes=contacts=[]
+
     for member in mem_list:
         if now - member.timestamp > (2 * configs['T_FAIL']):
             if member.IP not in nodes:
                 nodes.append(member.IP)
         elif now - member.timestamp > configs['T_FAIL']:
             member.isFailed = True
+            member.save()
 
     now = Misc.objects.get(name='heartbeat').count
     for filetuple in filetuples:
@@ -157,10 +159,23 @@ def detect_failure():
                 nodes.append(filetuple.IP)
         elif now - filetuple.timestamp > configs['T_FAIL']:
             filetuple.isFailed = True
+            filetuple.save()
+    # TODO: handle edge case
+    
+    now = Misc.objects.get(name='heartbeat').count
+    for contact in Contact.objects.filter(actual=True):
+        if now - contact.timestamp > (2 * configs['T_FAIL']):
+            if contact.IP not in contacts:
+                Contact.objects.filter(IP=contact.IP).delete()
+                contacts.append(contact.IP)
+        elif now - contact.timestamp > configs['T_FAIL']:
+            contact.isFailed = True
+            contact.save()
 
     if nodes:
         payload = {}
         payload['nodes'] = nodes
+        payload['contacts'] = contacts
         for member in mem_list:
             if member.IP not in nodes:
                 try:
@@ -168,21 +183,7 @@ def detect_failure():
                 # TODO: catch requests.exceptions.OSError,Timeout,ConnectionError
                 except Exception as e:
                     print(e)
-    for node_ip in nodes:
-        AffinityGroupView.objects.filter(IP=node_ip).delete()
-        Filetuple.objects.filter(IP=node_ip).delete()
-        Contact.objects.filter(IP=node_ip).delete()
     
-
-
-
-""" @periodic_task(run_every=configs['T_FAIL'], name="detect_contact_failure", ignore_result=True)
-def detect_contact_failure():
-    now = Misc.objects.get(name='heartbeat').count
-    contacts = Contact.objects.all()
-    for contact in contacts:
-        if now - contact.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request')  """
 
 
 

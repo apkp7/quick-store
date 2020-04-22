@@ -1,68 +1,125 @@
 from .models import AffinityGroupView, Contact, Filetuple, Misc
+from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 import hashlib
 import requests
-# k = number of affinity groups in system
-k = 3
+import pdb
+
+
+# number of affinity groups in system
+totalNumberOfGroups = 3
+# Set status code to 200 in case request is processed with out error
+
 
 def getHashValue(ip):
-    encodedIp = hashlib.sha1(ip.encode())
-    hexaValue = encodedIp.hexdigest()
-    hashString = hexaValue[0:5]
-    asciiValue = 0
-    for char in hashString:
-        asciiValue += ord(char)
-    return asciiValue%k
+    # encodedIp = hashlib.sha1(ip.encode())
+    # hexaValue = encodedIp.hexdigest()
+    # hashString = hexaValue[0:5]
+    # asciiValue = 0
+    # for char in hashString:
+    #     asciiValue += ord(char)
+    # return asciiValue%totalNumberOfGroups
+    return 1
+
+
 
 def check_node(request):
     return HttpResponse("Application alive",status=200)
 
+
+@csrf_exempt
+def update_groupId_in_misc(request):
+    misc = Misc.objects.get(name = "heartbeat")
+    misc.groupID = request.query_params.get('groupId','') 
+    misc.save()
+
+
+
 #api to add first node in a new affinity group
+@csrf_exempt
 def add_first_node(request):
-    ip = request.form["nodeIp"]
-    port = request.form["port"]
+    ip = request.POST.get('nodeIp','')
+    port = request.POST.get('port','')
     groupId = getHashValue(ip)
-    node = AffinityGroupView.objects.create(IP=ip, port=port, rtt=0.0, heartbeatCount=0, timestamp=0)
-    contact = Contact.objects.create( groupID=groupId, IP=ip, port=port, rtt=0.0, heartbeatCount=0, timestamp=0)
 
+    AffinityGroupView.objects.create(IP=ip, port=port)
+    Contact.objects.create(groupID=groupId, IP=ip, port=port, actual = True)
+    misc = Misc.objects.get(name = "heartbeat")
+    # pdb.set_trace()
+    misc.groupID = groupId
+    misc.save()
+    return HttpResponse("First Node, IP " + ip + " in Affinity Group " + str(groupId) + " added",status=200)
+
+
+
+
+@csrf_exempt
 def add_node(request):
-    newNodeIp = request.form["newNodeIp"]
-    existingNodeIp = request.form["existingNodeIp"]
-    port = request.form["port"]
+    newNodeIp = request.POST.get('newNodeIp','')
+    existingNodeIp = request.POST.get('existingNodeIp','')
+    port = request.POST.get('port','')
     newNodeGroupId = getHashValue(newNodeIp)
-    existingNodeGroupId = getHashValue(existingNodeIp)
 
+    existingNodeGroupId = 1
+    message = "Failed to add new node IP " + newNodeIp
+    status = 400
     #case when new node is of same affinity group
     if newNodeGroupId == existingNodeGroupId:
-        node = AffinityGroupView.objects.create(IP=newNodeIp, port=port, rtt=0.0, heartbeatCount=0, timestamp=0)
-        return HttpResponse("Node added in affinity group",status=201)
+        AffinityGroupView.objects.create(IP=newNodeIp, port=port)
+        try: 
+            requests.get("http://" + newNodeIp + ":" + port+ "/update_groupid?groupId=" + newNodeGroupId)
+        except Exception as ex:
+            print(ex)
+        return HttpResponse("Node with IP = " + newNodeIp +" added in affinity group " + str(newNodeGroupId), status=200)
 
     #case when new affinity group do not exists or node belong to different affinity group then current node
     if newNodeGroupId != existingNodeGroupId:
         #get list of all nodes which are in the new node affinity group.
-        target_group = Contact.objects.all().filter(groupID = newNodeGroupId).order_by('rtt')
+        target_group = Contact.objects.filter(groupID=str(newNodeGroupId)).order_by('rtt')
         #If this affinity group does not exists
         if not target_group:
-            add_new_affinity_group(newNodeIp,newNodeGroupId,port)
+            contact = Contact.objects.filter(groupID=existingNodeGroupId)
+            url = "http://"+ contact.IP + ":" + contact.port + "/Contact"
+            data = {'groupID' : str(newNodeGroupId) , 'IP': newNodeIp, 'port': '8000', 'actual' : True}
+            try:
+                response = request.post(url , data = data )
+            except Exception as e:
+                print(e)        
+            status = add_new_affinity_group(newNodeIp,newNodeGroupId,port)
+            if status == 200:
+                message = "New affinity group + " + str(newNodeGroupId) + " added in network IP = " + newNodeIp
         else:
             contactNodeIP = target_group[0].IP
-            add_node_in_existing_affinity_group(newNodeIp, contactNodeIP, port)
-    return HttpResponse("Node added ",status=201)
+            contactNodePort = target_group[0].port
+            status = add_node_in_existing_affinity_group(newNodeIp, port, contactNodeIP, contactNodePort)
+            if status == 200:
+                message = "New node IP = " + newNodeIp + " ,affinity group + " + str(newNodeGroupId) + " added in network"
+    return HttpResponse(message,status=status)
 
+
+
+
+@csrf_exempt
 def add_new_affinity_group(newNodeIp, newNodeGroupId, port):
-    #create contact at current node and call add new node method.
-    contact = Contact.objects.create(groupID=newNodeGroupId, IP=newNodeIp, port=port, rtt=0.0, heartbeatCount=0, timestamp=0)
+    status = 400
     url = "http://" + newNodeIp + ":" + port + "/admin/webapp/add_first_node"
     try:
-        result = requests.post(url, json={"nodeIp" : newNodeIp, "port" : port})
+        result = requests.post(url, data={"nodeIp" : newNodeIp, "port" : port})
+        status = result.status_code
     except Exception as ex:
         print(ex)
-    return HttpResponse("New affinity group added in network IP = " + newNodeIp, status=201)
+    return status
 
-def add_node_in_existing_affinity_group(newNodeIp, contactNodeIP, port):
+
+
+
+@csrf_exempt
+def add_node_in_existing_affinity_group(newNodeIp, newNodePort, contactNodeIP, contactNodePort):
+    status = 400
     url = "http://" + contactNodeIP + ":" + port + "/admin/webapp/add_node"
     try:
-        result = requests.post(url, json={"newNodeIp" : newNodeIp, "existingNodeIp" : contactNodeIP, "port" : port})
+        result = requests.post(url, data={"newNodeIp" : newNodeIp, "existingNodeIp" : contactNodeIP, "port" : port})
+        status = result.status_code
     except Exception as ex:
         print(ex)
-    return HttpResponse("Node added in affinity group, IP = " + newNodeIp, status=201)
+    return status

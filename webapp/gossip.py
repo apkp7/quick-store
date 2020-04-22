@@ -121,10 +121,11 @@ def intergroup_hearbeat(request):
 
 
 
+@csrf_exempt
 def delete_node(request):
     body = json.loads(request.body.decode('utf-8'))
     for node_ip in body['nodes']:
-        AffinityGroupView.objects.filter(IP=node_ip).delete()
-        Filetuple.objects.filter(IP=node_ip).delete()
+        AffinityGroupView.objects.filter(IP=node_ip, isFailed=True).delete()
+        Filetuple.objects.filter(IP=node_ip, isFailed=True).delete()
     for contact_ip in body['contacts']:
-        Contact.objects.filter(IP=contact_ip).delete()
+        Contact.objects.filter(IP=contact_ip, isFailed=True).delete()
