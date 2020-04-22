@@ -129,3 +129,4 @@ def delete_node(request):
         Filetuple.objects.filter(IP=node_ip, isFailed=True).delete()
     for contact_ip in body['contacts']:
         Contact.objects.filter(IP=contact_ip, isFailed=True).delete()
+    return HttpResponse(status=200)

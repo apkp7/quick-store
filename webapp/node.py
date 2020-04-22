@@ -43,7 +43,8 @@ def add_first_node(request):
     port = request.POST.get('port','')
     groupId = getHashValue(ip)
 
-    AffinityGroupView.objects.create(IP=ip, port=port)
+    misc = Misc.objects.get(name = "heartbeat")
+    AffinityGroupView.objects.create(IP=ip, port=port, timestamp=misc.count)
     Contact.objects.create(groupID=groupId, IP=ip, port=port, actual = True)
     misc = Misc.objects.get(name = "heartbeat")
     misc.groupID = groupId
@@ -69,7 +70,14 @@ def add_node(request):
             requests.post("http://" + newNodeIp + ":" + port+ "/admin/webapp/update_groupid")
         except Exception as ex:
             print(ex)
-        AffinityGroupView.objects.create(IP=newNodeIp, port=port)
+        url = "http://"+ newNodeIp + ":" + port + "/AffinityGroupView/"
+        data = {'IP': newNodeIp, 'port': port}
+        try:
+            response = requests.post(url , data = data)
+        except Exception as e:
+            print(e)      
+        status = add_new_affinity_group(newNodeIp,newNodeGroupId,port)
+        AffinityGroupView.objects.create(IP=newNodeIp, port=port, timestamp=Misc.objects.get(name = "heartbeat").count)
         return HttpResponse("Node with IP = " + newNodeIp +" added in affinity group " + str(newNodeGroupId), status=200)
 
     #case when new affinity group do not exists or node belong to different affinity group then current node
