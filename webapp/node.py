@@ -29,8 +29,10 @@ def check_node(request):
 
 @csrf_exempt
 def update_groupId_in_misc(request):
+    pdb.set_trace()
+    groupId = request.POST.get('groupId','')
     misc = Misc.objects.get(name = "heartbeat")
-    misc.groupID = request.query_params.get('groupId','') 
+    misc.groupID = groupId
     misc.save()
 
 
@@ -65,11 +67,12 @@ def add_node(request):
     status = 400
     #case when new node is of same affinity group
     if newNodeGroupId == existingNodeGroupId:
-        AffinityGroupView.objects.create(IP=newNodeIp, port=port)
-        try: 
-            requests.get("http://" + newNodeIp + ":" + port+ "/update_groupid?groupId=" + newNodeGroupId)
+        pdb.set_trace()
+        try:
+            requests.post("http://" + newNodeIp + ":" + port+ "/admin/webapp/update_groupid", data={"groupId":str(newNodeGroupId)})
         except Exception as ex:
             print(ex)
+        AffinityGroupView.objects.create(IP=newNodeIp, port=port)
         return HttpResponse("Node with IP = " + newNodeIp +" added in affinity group " + str(newNodeGroupId), status=200)
 
     #case when new affinity group do not exists or node belong to different affinity group then current node
