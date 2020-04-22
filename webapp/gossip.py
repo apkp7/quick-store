@@ -21,7 +21,6 @@ my_group_id = Misc.objects.get(name='heartbeat').groupID
 @csrf_exempt
 def listen_heartbeat(request):
     body = json.loads(request.body.decode('utf-8'))
-    # pdb.set_trace()
     curr_time = Misc.objects.get(name='heartbeat').count
     for node in body['nodes']:
         if node["IP"] != my_ip:
@@ -45,7 +44,7 @@ def listen_heartbeat(request):
                     node_from_db[0].isFailed = True
                     node_from_db[0].save()
     for contact in body['contacts']:
-        if contact["IP"] != my_ip:
+        if contact["IP"] != my_ip and contact['actual']:
             node_from_db = Contact.objects.filter(IP=contact["IP"])
             if not node_from_db:
                 new_node = Contact(
