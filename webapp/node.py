@@ -60,10 +60,11 @@ def add_node(request):
     existingNodeIp = request.POST.get('existingNodeIp','')
     port = request.POST.get('port','')
     newNodeGroupId = getHashValue(newNodeIp)
+    existingNodeGroupId = getHashValue(existingNodeIp)
 
-    existingNodeGroupId = 1
     message = "Failed to add new node IP " + newNodeIp
     status = 400
+    pdb.set_trace()
     #case when new node is of same affinity group
     if newNodeGroupId == existingNodeGroupId:
         try:
@@ -92,7 +93,6 @@ def add_node(request):
                 if status == 200:
                     message = "New affinity group + " + str(newNodeGroupId) + " added in network IP = " + newNodeIp
         else:
-            pdb.set_trace()
             contactNodeIP = target_group[0].IP
             contactNodePort = target_group[0].port
             status = add_node_in_existing_affinity_group(newNodeIp, port, contactNodeIP, contactNodePort)
@@ -120,9 +120,9 @@ def add_new_affinity_group(newNodeIp, newNodeGroupId, port):
 @csrf_exempt
 def add_node_in_existing_affinity_group(newNodeIp, newNodePort, contactNodeIP, contactNodePort):
     status = 400
-    url = "http://" + contactNodeIP + ":" + port + "/admin/webapp/add_node"
+    url = "http://" + contactNodeIP + ":" + contactNodePort + "/admin/webapp/add_node"
     try:
-        result = requests.post(url, data={"newNodeIp" : newNodeIp, "existingNodeIp" : contactNodeIP, "port" : port})
+        result = requests.post(url, data={"newNodeIp" : newNodeIp, "existingNodeIp" : contactNodeIP, "port" : newNodePort})
         status = result.status_code
     except Exception as ex:
         print(ex)
