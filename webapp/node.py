@@ -67,7 +67,6 @@ def add_node(request):
     status = 400
     #case when new node is of same affinity group
     if newNodeGroupId == existingNodeGroupId:
-        pdb.set_trace()
         try:
             requests.post("http://" + newNodeIp + ":" + port+ "/admin/webapp/update_groupid")
         except Exception as ex:
@@ -81,16 +80,19 @@ def add_node(request):
         target_group = Contact.objects.filter(groupID=str(newNodeGroupId)).order_by('rtt')
         #If this affinity group does not exists
         if not target_group:
+            pdb.set_trace()
             contact = Contact.objects.filter(groupID=existingNodeGroupId)
-            url = "http://"+ contact.IP + ":" + contact.port + "/Contact"
-            data = {'groupID' : str(newNodeGroupId) , 'IP': newNodeIp, 'port': '8000', 'actual' : True}
-            try:
-                response = request.post(url , data = data )
-            except Exception as e:
-                print(e)        
-            status = add_new_affinity_group(newNodeIp,newNodeGroupId,port)
-            if status == 200:
-                message = "New affinity group + " + str(newNodeGroupId) + " added in network IP = " + newNodeIp
+            if contact:
+                contact = contact[0]
+                url = "http://"+ contact.IP + ":" + contact.port + "/Contact"
+                data = {'groupID' : str(newNodeGroupId) , 'IP': newNodeIp, 'port': '8000', 'actual' : True}
+                try:
+                    response = request.post(url , data = data )
+                except Exception as e:
+                    print(e)        
+                status = add_new_affinity_group(newNodeIp,newNodeGroupId,port)
+                if status == 200:
+                    message = "New affinity group + " + str(newNodeGroupId) + " added in network IP = " + newNodeIp
         else:
             contactNodeIP = target_group[0].IP
             contactNodePort = target_group[0].port
