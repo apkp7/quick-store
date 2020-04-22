@@ -13,14 +13,13 @@ totalNumberOfGroups = 3
 
 
 def getHashValue(ip):
-    # encodedIp = hashlib.sha1(ip.encode())
-    # hexaValue = encodedIp.hexdigest()
-    # hashString = hexaValue[0:5]
-    # asciiValue = 0
-    # for char in hashString:
-    #     asciiValue += ord(char)
-    # return asciiValue%totalNumberOfGroups
-    return 2
+    encodedIp = hashlib.sha1(ip.encode())
+    hexaValue = encodedIp.hexdigest()
+    hashString = hexaValue[0:5]
+    asciiValue = 0
+    for char in hashString:
+        asciiValue += ord(char)
+    return asciiValue%totalNumberOfGroups
 
 
 
@@ -30,11 +29,11 @@ def check_node(request):
 
 @csrf_exempt
 def update_groupId_in_misc(request):
-    pdb.set_trace()
     misc = Misc.objects.get(name = "heartbeat")
     misc.groupID = getHashValue(my_ip)
     misc.save()
     return HttpResponse(status=200)
+
 
 
 #api to add first node in a new affinity group
@@ -64,7 +63,6 @@ def add_node(request):
 
     message = "Failed to add new node IP " + newNodeIp
     status = 400
-    pdb.set_trace()
     #case when new node is of same affinity group
     if newNodeGroupId == existingNodeGroupId:
         try:

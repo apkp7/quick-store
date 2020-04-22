@@ -32,14 +32,15 @@ def node_with_min_rtt(visited):
 
 def update_heartbeat():
     my_mem_list = AffinityGroupView.objects.get(IP=my_ip)
-    my_mem_list.heartbeatCount = Misc.objects.get(name='heartbeat').count
-    my_mem_list.timestamp = Misc.objects.get(name='heartbeat').count
-    my_mem_list.save()
-    my_filetuples = Filetuple.objects.filter(IP=my_ip)
-    for filetuple in my_filetuples:
-        filetuple.heartbeatCount = Misc.objects.get(name='heartbeat').count
-        filetuple.timestamp = Misc.objects.get(name='heartbeat').count
-        filetuple.save()
+    if mem_list
+        my_mem_list.heartbeatCount = Misc.objects.get(name='heartbeat').count
+        my_mem_list.timestamp = Misc.objects.get(name='heartbeat').count
+        my_mem_list.save()
+        my_filetuples = Filetuple.objects.filter(IP=my_ip)
+        for filetuple in my_filetuples:
+            filetuple.heartbeatCount = Misc.objects.get(name='heartbeat').count
+            filetuple.timestamp = Misc.objects.get(name='heartbeat').count
+            filetuple.save()
 
 
 
@@ -139,11 +140,9 @@ def disseminate_contact_heartbeat():
 
 @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
+    mem_list = AffinityGroupView.objects.all()    
+    nodes = []
     now = Misc.objects.get(name='heartbeat').count
-    mem_list = AffinityGroupView.objects.all()
-    filetuples = Filetuple.objects.all()
-    nodes=contacts=[]
-
     for member in mem_list:
         if now - member.timestamp > (2 * configs['T_FAIL']):
             if member.IP not in nodes:
@@ -152,27 +151,19 @@ def detect_failure():
             member.isFailed = True
             member.save()
 
+    contacts = []
+    my_group = Misc.objects.get(name='heartbeat').groupID
+    contact_list = Contact.objects.all()  
     now = Misc.objects.get(name='heartbeat').count
-    for filetuple in filetuples:
-        if now - filetuple.timestamp > (2 * configs['T_FAIL']):
-            if filetuple.IP not in nodes:
-                nodes.append(filetuple.IP)
-        elif now - filetuple.timestamp > configs['T_FAIL']:
-            filetuple.isFailed = True
-            filetuple.save()
-    # TODO: handle edge case
-    
-    now = Misc.objects.get(name='heartbeat').count
-    for contact in Contact.objects.filter(actual=True):
+    for contact in contact_list:
         if now - contact.timestamp > (2 * configs['T_FAIL']):
             if contact.IP not in contacts:
-                Contact.objects.filter(IP=contact.IP).delete()
                 contacts.append(contact.IP)
         elif now - contact.timestamp > configs['T_FAIL']:
             contact.isFailed = True
             contact.save()
 
-    if nodes:
+    if nodes or contacts:
         payload = {}
         payload['nodes'] = nodes
         payload['contacts'] = contacts
