@@ -34,6 +34,9 @@ def listen_heartbeat(request):
                                 timestamp=curr_time
                             )
                 new_node.save()
+                print("\n"+ "*"*75)
+                print("------- Gossip Stream: New " + str(new_node.IP) + " node added to membership list -----------")
+                print("*"*75 +"\n")
             else:
                 if node_from_db[0].heartbeatCount < node["heartbeatCount"]:
                     node_from_db[0].heartbeatCount = node["heartbeatCount"]
@@ -56,6 +59,9 @@ def listen_heartbeat(request):
                                 timestamp=curr_time
                             )
                 new_node.save()
+                print("\n"+ "*"*75)
+                print("------- Gossip Stream: New " + str(new_node.IP) + " contact added to contact list -----------")
+                print("*"*75 +"\n")
             else:
                 if node_from_db[0].heartbeatCount < contact["heartbeatCount"]:
                     node_from_db[0].heartbeatCount = contact["heartbeatCount"]
@@ -78,6 +84,9 @@ def listen_heartbeat(request):
                                 timestamp=curr_time
                             )
                 new_filetuple.save()
+                print("\n"+ "*"*75)
+                print("------- Gossip Stream: New " + str(new_filetuple.IP) + " filetuple added to filetuple list -----------")
+                print("*"*75 +"\n")
             else:
                 if filetuple_from_db[0].heartbeatCount < filetuple["heartbeatCount"]:
                     filetuple_from_db[0].heartbeatCount = filetuple["heartbeatCount"]
@@ -87,11 +96,7 @@ def listen_heartbeat(request):
                 elif filetuple["isFailed"]:
                     filetuple_from_db[0].isFailed = True
                     filetuple_from_db[0].save()
-    print("\n"+"*"*75)
-    print("----------- Gossip stream: Membership list updated ---------------")
-    print("----------- Gossip stream: Local contact list updated ---------------")
-    print("----------- Gossip stream: Filetuple list updated ---------------")
-    print("*"*75 +"\n")
+
     TTL = int(body['TTL'])
     disseminate_heartbeat(TTL - 1, body)
     return HttpResponse(str(TTL), status=200)
@@ -120,9 +125,6 @@ def intergroup_hearbeat(request):
                 node_from_db[0].heartbeatCount = node["heartbeatCount"]
                 node_from_db[0].timestamp = curr_time
                 node_from_db[0].save()
-    print("\n"+ "*"*75)
-    print("----------- Gossip stream: Contact list updated ---------------")
-    print("*"*75 +"\n")
     return HttpResponse(status=200)
 
 
@@ -132,13 +134,13 @@ def delete_node(request):
     body = json.loads(request.body.decode('utf-8'))
     for node_ip in body['nodes']:
         AffinityGroupView.objects.filter(IP=node_ip, isFailed=True).delete()
-        Filetuple.objects.filter(IP=node_ip, isFailed=True).delete()
+        Filetuple.objects.filter(IP=node_ip).delete()
         print("\n"+ "*"*75)
-        print("----------- Failure detection: " + str(node_ip) + " node deleted from membership list ---------------")
+        print("------- Failure detection: " + str(node_ip) + " node deleted from membership list -----------")
         print("*"*75 +"\n")
     for contact_ip in body['contacts']:
         Contact.objects.filter(IP=contact_ip, isFailed=True).delete()
         print("\n"+ "*"*75)
-        print("----------- Failure detection: " + str(contact_ip) + " contact deleted from membership list ---------------")
+        print("------- Failure detection: " + str(contact_ip) + " contact deleted from membership list -----------")
         print("*"*75 +"\n")
     return HttpResponse(status=200)

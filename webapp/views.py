@@ -195,7 +195,9 @@ class DownloadFile(APIView,FileUtility):
     def get(self,request):
         filename = self.request.query_params.get('fileName','')
         groupID = self.hash(filename)
-        print("The destination group of file is: " + str(groupID))
+        print("*"*50)
+        print("--------------- The destination group of file is: " + str(groupID)+" --------")
+        print("*"*50)
         node_destination_affinityGroup = self.get_node_from_destination_affinityGroup(groupID)
         if node_destination_affinityGroup:
             ip = node_destination_affinityGroup['IP']
@@ -210,7 +212,9 @@ class DownloadFile(APIView,FileUtility):
             if not file_home_node:
                 return HttpResponse(status=404)
             else:
-                print("The node which holds the file is: " + str(file_home_node[0]['IP']))
+                print("*"*50)
+                print("-------- The node which holds the file is: " + str(file_home_node[0]['IP']) + "--------")
+                print("*"*50)
                 ip = file_home_node[0]['IP']
                 port = file_home_node[0]['port']
                 url = self.http + str(ip) + ":"+ str(port) + self.path_save_file +"?fileName="+ filename
@@ -227,7 +231,9 @@ class DownloadFile(APIView,FileUtility):
                         file = open(path_to_file, "wb")
                         file.write(result.content)
                         file.close()
-                        print("Downloaded the file successfully")
+                        print("*"*50)
+                        print("----------- Downloaded the file successfully !!!! ----------")
+                        print("*"*50)
                         return HttpResponse(status = 200)
                     else:
                         return HttpResponse(status = result.status_code)

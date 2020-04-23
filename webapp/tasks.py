@@ -42,9 +42,6 @@ def update_heartbeat():
             filetuple.heartbeatCount = Misc.objects.get(name='heartbeat').count
             filetuple.timestamp = Misc.objects.get(name='heartbeat').count
             filetuple.save()
-        print("\n"+"*"*75)
-        print("----------- Gossip stream: " + str(my_mem_list.IP) + " node heartbeat incremented ---------------")
-        print("*"*75 +"\n")
 
 
 
@@ -56,9 +53,6 @@ def update_contact_heartbeat():
         my_contact[0].heartbeatCount = hbt
         my_contact[0].timestamp = hbt
         my_contact[0].save()
-        print("\n"+"*"*75)
-        print("----------- Gossip stream: " + str(my_contact[0].IP) + " contact heartbeat incremented ---------------")
-        print("*"*75 +"\n")
 
 
 
@@ -154,9 +148,6 @@ def detect_failure():
         if now - member.timestamp > (2 * configs['T_FAIL']):
             if member.IP not in nodes:
                 nodes.append(member.IP)
-                print("\n"+"*"*75)
-                print("----------- Failure detection: " + str(member.IP) + " node is dead ---------------")
-                print("*"*75 +"\n")
         elif now - member.timestamp > configs['T_FAIL']:
             member.isFailed = True
             member.save()
@@ -169,9 +160,6 @@ def detect_failure():
         if now - contact.timestamp > (2 * configs['T_FAIL']):
             if contact.IP not in contacts:
                 contacts.append(contact.IP)
-                print("\n"+"*"*75)
-                print("----------- Failure detection: " + str(contact.IP) + " contact is dead ---------------")
-                print("*"*75 +"\n")
         elif now - contact.timestamp > configs['T_FAIL']:
             contact.isFailed = True
             contact.save()
