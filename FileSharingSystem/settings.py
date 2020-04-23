@@ -132,16 +132,4 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
-""" 
-CELERY_BEAT_SCHEDULE = {
-    'increment_heartbeat': {
-       'task': 'webapp.tasks.increment_heartbeat',
-       'schedule': 1.0,
-    },
-    'disseminate_heartbeat': {
-       'task': 'webapp.tasks.disseminate_heartbeat',
-       'schedule': 1.0,
-    },
-} 
-"""
 

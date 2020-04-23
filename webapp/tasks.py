@@ -29,16 +29,23 @@ def node_with_min_rtt(visited):
     return None
 
 
+
 def update_heartbeat():
-    my_mem_list = AffinityGroupView.objects.get(IP=my_ip)
-    my_mem_list.heartbeatCount = Misc.objects.get(name='heartbeat').count
-    my_mem_list.timestamp = Misc.objects.get(name='heartbeat').count
-    my_mem_list.save()
-    my_filetuples = Filetuple.objects.filter(IP=my_ip)
-    for filetuple in my_filetuples:
-        filetuple.heartbeatCount = Misc.objects.get(name='heartbeat').count
-        filetuple.timestamp = Misc.objects.get(name='heartbeat').count
-        filetuple.save()
+    my_mem_list = AffinityGroupView.objects.filter(IP=my_ip)
+    if my_mem_list:
+        my_mem_list = my_mem_list[0]
+        my_mem_list.heartbeatCount = Misc.objects.get(name='heartbeat').count
+        my_mem_list.timestamp = Misc.objects.get(name='heartbeat').count
+        my_mem_list.save()
+        my_filetuples = Filetuple.objects.filter(IP=my_ip)
+        for filetuple in my_filetuples:
+            filetuple.heartbeatCount = Misc.objects.get(name='heartbeat').count
+            filetuple.timestamp = Misc.objects.get(name='heartbeat').count
+            filetuple.save()
+        print("\n"+"*"*75)
+        print("----------- Gossip stream: " + str(my_mem_list.IP) + " node heartbeat incremented ---------------")
+        print("*"*75 +"\n")
+
 
 
 
@@ -49,6 +56,10 @@ def update_contact_heartbeat():
         my_contact[0].heartbeatCount = hbt
         my_contact[0].timestamp = hbt
         my_contact[0].save()
+        print("\n"+"*"*75)
+        print("----------- Gossip stream: " + str(my_contact[0].IP) + " contact heartbeat incremented ---------------")
+        print("*"*75 +"\n")
+
 
 
 
@@ -72,6 +83,7 @@ def construct_payload(data, TTL):
                 filetuple['heartbeatCount'] = hbt
     payload['TTL'] = TTL
     return payload
+
 
 
 
@@ -106,6 +118,7 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if Af
 
 
 
+
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_contact_heartbeat", ignore_result=True)
 def disseminate_contact_heartbeat():
     if len(Contact.objects.filter(actual=True)):    
@@ -114,6 +127,7 @@ def disseminate_contact_heartbeat():
         exception = False
         contacts = Contact.objects.all()
         payload['contacts'] = [entry for entry in contacts.values()]
+        
         for contact in contacts: 
             t1 = time.time()
             try:
@@ -130,29 +144,50 @@ def disseminate_contact_heartbeat():
 
         
 
+
 @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
+    mem_list = AffinityGroupView.objects.all()    
+    nodes = []
     now = Misc.objects.get(name='heartbeat').count
-    # TODO: remember and mark node if not updated within T_FAIL
-    mem_list = AffinityGroupView.objects.all()
-    filetuples = Filetuple.objects.all()
     for member in mem_list:
         if now - member.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request') 
-    for filetuple in filetuples:
-        if now - filetuple.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request') 
+            if member.IP not in nodes:
+                nodes.append(member.IP)
+                print("\n"+"*"*75)
+                print("----------- Failure detection: " + str(member.IP) + " node is dead ---------------")
+                print("*"*75 +"\n")
+        elif now - member.timestamp > configs['T_FAIL']:
+            member.isFailed = True
+            member.save()
 
-
-
-@periodic_task(run_every=configs['T_FAIL'], name="detect_contact_failure", ignore_result=True)
-def detect_contact_failure():
+    contacts = []
+    my_group = Misc.objects.get(name='heartbeat').groupID
+    contact_list = Contact.objects.all()  
     now = Misc.objects.get(name='heartbeat').count
-    contacts = Contact.objects.all()
-    for contact in contacts:
+    for contact in contact_list:
         if now - contact.timestamp > (2 * configs['T_FAIL']):
-            print('FAILURE! Send request') 
+            if contact.IP not in contacts:
+                contacts.append(contact.IP)
+                print("\n"+"*"*75)
+                print("----------- Failure detection: " + str(contact.IP) + " contact is dead ---------------")
+                print("*"*75 +"\n")
+        elif now - contact.timestamp > configs['T_FAIL']:
+            contact.isFailed = True
+            contact.save()
 
+    if nodes or contacts:
+        payload = {}
+        payload['nodes'] = nodes
+        payload['contacts'] = contacts
+        for member in mem_list:
+            if member.IP not in nodes:
+                try:
+                    res = requests.post('http://' + member.IP + ':' + member.port + '/delete-node', json.dumps(payload))
+                # TODO: catch requests.exceptions.OSError,Timeout,ConnectionError
+                except Exception as e:
+                    print(e)
+    
 
 
 @periodic_task(run_every=1.0, name="increment_heartbeat", ignore_result=True)

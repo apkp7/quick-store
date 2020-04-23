@@ -59,7 +59,7 @@ class FileUtility:
         s = 0
         for i in filename:
             s += ord(i)
-        return 2
+        return s%3
 
     def get_node_from_destination_affinityGroup(self,param):
         hashValue = param
@@ -232,5 +232,4 @@ class DownloadFile(APIView,FileUtility):
                     else:
                         return HttpResponse(status = result.status_code)
         return HttpResponse(status = 500)
-
 

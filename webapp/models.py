@@ -8,6 +8,7 @@ class AffinityGroupView(models.Model):
     rtt = models.FloatField(default=0.0, validators=[MinValueValidator(0.0)])
     heartbeatCount = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     timestamp = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    isFailed = models.BooleanField(default=False) 
 
 class Contact(models.Model):
     groupID = models.CharField(max_length=40)
@@ -17,6 +18,7 @@ class Contact(models.Model):
     heartbeatCount = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     timestamp = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     actual = models.BooleanField(default=False) 
+    isFailed = models.BooleanField(default=False) 
 
 class Filetuple(models.Model):
     fileName = models.CharField(max_length=100)
@@ -24,6 +26,7 @@ class Filetuple(models.Model):
     port = models.CharField(max_length=5)
     heartbeatCount = models.IntegerField(default=0, validators=[MinValueValidator(0)])
     timestamp = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    isFailed = models.BooleanField(default=False)
 
 class Misc(models.Model):
     name = models.CharField(max_length=40)
