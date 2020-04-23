@@ -15,6 +15,8 @@ urlpatterns = [
     path('admin/webapp/save-file/',views.SaveFile.as_view()),
     path('admin/webapp/download',views.DownloadFile.as_view()),
     path('admin/webapp/get-file/',views.GetFiletuple.as_view()),
+    path('admin/webapp/get-affinity-group/',views.GetAffinityGroup.as_view()),
+    path('admin/webapp/ping/',views.Ping.as_view()),
     path('heartbeat', gossip.listen_heartbeat),
     path('delete-node', gossip.delete_node),
     path('contact-heartbeat', gossip.intergroup_hearbeat),

@@ -23,6 +23,7 @@ def getHashValue(ip):
 
 
 
+@csrf_exempt
 def check_node(request):
     return HttpResponse("Application alive",status=200)
 
