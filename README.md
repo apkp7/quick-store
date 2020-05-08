@@ -59,10 +59,11 @@ $ celery -A FileSharingSystem worker -l info -B
 ```
 
 * Deploy Bootstrap Server as an application and Start it for acknowledging new node join-request.
- **Note**: Perform this step only on a seperate node (no db setup required for this application). System assumes that this node never fails. In production envrionment, it is prudent to have multiple backup servers for such tasks. 
 ```
 bootstrapServer/$ python manage.py runserver 0:8000
 ```          
+**Note**: Perform this last step only on a seperate node (no db setup required for this application). System assumes that this node never fails. In production envrionment, it is prudent to have multiple backup servers for such tasks. 
+
 
 
 ### Project Structure
