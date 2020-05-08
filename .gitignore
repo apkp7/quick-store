@@ -1,6 +1,7 @@
 media/
 celerybeat-schedule
 p2p/
+env/
 .vscode/
 **/migrations/
 db.sqlite3
