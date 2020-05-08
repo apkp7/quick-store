@@ -58,6 +58,11 @@ $ source env/bin/activate
 $ celery -A FileSharingSystem worker -l info -B
 ```
 
+* Deploy Bootstrap Server as an application and Start it for acknowledging new node join-request.
+ **Note**: Perform this step only on a seperate node (no db setup required for this application). System assumes that this node never fails. In production envrionment, it is prudent to have multiple backup servers for such tasks. 
+```
+bootstrapServer/$ python manage.py runserver 0:8000
+```          
 
 
 ### Project Structure
@@ -75,10 +80,9 @@ $ celery -A FileSharingSystem worker -l info -B
   * Urls.py - System routes
   * Views.py - contains endpoint definitions of file operations
   * Node.py: contains node joining protocol operations
+  * bootstrapServer/views.py - contains logic for accepting new node join-requests.
 * **Requirement.txt**- contains system package dependencies
 * **Manage.py**- Django manager
-
-
 
 
 ### System usage
@@ -105,7 +109,15 @@ System supports two major operations: File Upload (object insertion) and  File D
   This get API will download the file to /media/downloads folder on the server on which API is targeted.
 ```
 
+* Node Join Endpoint
 
+```
+  HTTP Method: GET
+  URL: http://<IP address of the bootstrap server>:<Port>/bootstrapServer/newNodeIP  
+  newNodeIP - This is the IP address of the new node that you want to join the system.
+```
+
+ 
 
 ### Data Operations
 
@@ -135,28 +147,7 @@ After 48 seconds (i.e. 2 * T_fail seconds, T_fail is configured in gossip.yaml),
 - Every node runs a failure detection periodic task using celery and check for last updated timestamp on every member heartbeat.
 
 
-Node addition in the system:
-$ git clone https://github.ncsu.edu/bbhardw/p2pServer.git
 
-p2pServer/bootstrapServer/views.py - This is the  location and file that has the bootstrap code base. 
-
-There is no db setup required for this application. Although Django and Python3 are required. 
-
-Starting service:- navigate  to directory /p2pServer and run command
-
-$ python manage.py runserver 0:8000
-
-All requests get API’s.  
-
-API request to add node:-
-          http:/hostIP:8000/bootstrapServer/newNodeIP
-         
-   hostIP - This is the IP address for the host on which bootstrap server is running.
-   newNodeIP - This is the IP address of the new node that you want to join is the file    sharing system.
-API request to get List of active nodes
-http:/hostIP:8000/bootstrapServer/getActiveList
-
-This request returns a list of all active nodes in the system.
  
 
 
