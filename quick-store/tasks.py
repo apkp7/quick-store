@@ -14,14 +14,18 @@ import time
 from math import log2
 import json
 
+# Fetch gossip paramaters
 with open('webapp/gossip.yaml', 'r') as file:
     configs = yaml.load(file, Loader=yaml.FullLoader)
 
 my_ip = requests.get('https://api.ipify.org').text
 
 
-
 def node_with_min_rtt(visited):
+    """
+    Finds member with minimum round-trip-time from the
+    membership list for the purpose of selecting gossip targets
+    """
     nodes = AffinityGroupView.objects.order_by('rtt')
     for node in nodes:
         if node.IP not in visited and node.IP != my_ip:
@@ -31,6 +35,10 @@ def node_with_min_rtt(visited):
 
 
 def update_heartbeat():
+    """
+    Updates heartbeat for the responsible entities such as
+    its own tuple in the membership list and stored files indices in filetuples
+    """
     my_mem_list = AffinityGroupView.objects.filter(IP=my_ip)
     if my_mem_list:
         my_mem_list = my_mem_list[0]
@@ -47,6 +55,10 @@ def update_heartbeat():
 
 
 def update_contact_heartbeat():
+    """
+    If active contact, updates heartbeat for its contact tuple in
+    Contact membership list
+    """
     my_contact = Contact.objects.filter(IP=my_ip)
     if my_contact:
         hbt = Misc.objects.get(name='heartbeat').count
@@ -58,13 +70,17 @@ def update_contact_heartbeat():
 
 
 def construct_payload(data, TTL):
+    """
+    Builds a payload for disseminating membership lists [Group View, Contacts, Filetuples]
+    within the affinity group
+    """
     payload = {}
     if not data:
         payload['nodes'] = [entry for entry in AffinityGroupView.objects.all().values()]
         payload['contacts'] = [entry for entry in Contact.objects.all().values()]
         payload['filetuples'] = [entry for entry in Filetuple.objects.all().values()]
     else:
-        payload = data   
+        payload = data
         hbt = Misc.objects.get(name='heartbeat').count
         for node in payload['nodes']:
             if node["IP"] == my_ip:
@@ -82,7 +98,11 @@ def construct_payload(data, TTL):
 
 
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_heartbeat", ignore_result=True)
-def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if AffinityGroupView.objects.all().count() > 2 else 2), data={}):
+def disseminate_heartbeat(TTL=2, data={}):
+    """
+    Runs every gossip period, updates its heartbeat and gossips the
+    membership lists to target nodes(fan-out)
+    """
     TTL = int(TTL)
     if TTL > 0:
         fan_out = configs['FAN_OUT']
@@ -115,7 +135,11 @@ def disseminate_heartbeat(TTL=log2(AffinityGroupView.objects.all().count() if Af
 
 @periodic_task(run_every=configs['GOSSIP_PERIOD'], name="disseminate_contact_heartbeat", ignore_result=True)
 def disseminate_contact_heartbeat():
-    if len(Contact.objects.filter(actual=True)):    
+    """
+    Runs every gossip period only if node is active contact and
+    gossips its contact list after updating the heartbeat
+    """
+    if len(Contact.objects.filter(actual=True)):
         update_contact_heartbeat()
         payload = {}
         exception = False
@@ -141,6 +165,11 @@ def disseminate_contact_heartbeat():
 
 @periodic_task(run_every=configs['T_FAIL']/2, name="detect_failure", ignore_result=True)
 def detect_failure():
+    """
+    Runs every half of T_fail time and checks the hearbeat updates.
+    Raise failure if heartbeat not update for 2 * T_fail time and
+    intimate other members in the group about this failure
+    """
     mem_list = AffinityGroupView.objects.all()    
     nodes = []
     now = Misc.objects.get(name='heartbeat').count
@@ -180,6 +209,9 @@ def detect_failure():
 
 @periodic_task(run_every=1.0, name="increment_heartbeat", ignore_result=True)
 def increment_heartbeat():
+    """
+    Runs every second and increment heartbeat for this node
+    """
     counter = Misc.objects.select_for_update().get_or_create(name='heartbeat')[0]
     counter.count += 1
     counter.save()

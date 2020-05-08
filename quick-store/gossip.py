@@ -16,10 +16,13 @@ import pdb
 
 # TODO: create one model for my_ip
 my_ip = requests.get('https://api.ipify.org').text
-my_group_id = Misc.objects.get(name='heartbeat').groupID
 
 @csrf_exempt
 def listen_heartbeat(request):
+    """
+    Receive heartbeat updates from (intra-group) members.
+    Update the membership list using the incoming hbeat changes.
+    """
     body = json.loads(request.body.decode('utf-8'))
     curr_time = Misc.objects.get(name='heartbeat').count
     for node in body['nodes']:
@@ -105,7 +108,12 @@ def listen_heartbeat(request):
 
 @csrf_exempt
 def intergroup_hearbeat(request):
+    """
+    Receive heartbeat updates from (inter-group) members i.e. contacts.
+    Update the membership list using the incoming hbeat changes.
+    """
     body = json.loads(request.body.decode('utf-8'))
+    my_group_id = Misc.objects.get(name='heartbeat').groupID
     for node in body['contacts']:
         if node["groupID"] != my_group_id and node["IP"] != my_ip:
             node_from_db = Contact.objects.filter(IP=node["IP"])
@@ -131,6 +139,9 @@ def intergroup_hearbeat(request):
 
 @csrf_exempt
 def delete_node(request):
+    """
+    Deletes failed node off the membership lists [Group View and Filetuples]
+    """
     body = json.loads(request.body.decode('utf-8'))
     for node_ip in body['nodes']:
         AffinityGroupView.objects.filter(IP=node_ip, isFailed=True).delete()

@@ -35,9 +35,10 @@ class FileUtility:
     path_get_affinity_group_view = "/AffinityGroupView/"
     path_get_filetuple = "/Filetuple/"
 
+    # This method finds the node which is havnig minimum number of files store on it. 
     def loadBalancer(self,affinityGroups,fileTuple ):
         # Finding the affinity group with least number of files on it.
-        import pdb; pdb.set_trace()
+
         affinityGroupsValue = affinityGroups.json()
         files = fileTuple.json()
         file_affinityGroupMapping = dict()
@@ -54,19 +55,21 @@ class FileUtility:
         for item in affinityGroupsValue:
             if item['IP'] == ip:
                 return item
-
+    # Hash function to compute the hash value using file name
     def hash(self,filename):
         s = 0
         for i in filename:
             s += ord(i)
         return s%3
 
+    # This function finds the node present in destination affinity group
     def get_node_from_destination_affinityGroup(self,param):
         hashValue = param
         #finding the target affinity group for file. 
         target_group = Contact.objects.all().filter(groupID = hashValue)
         return target_group.values()[0]   
     
+    # This function finds the home node of file
     def get_file_homenode(self,affinityGroup_node_contact):
         ip = affinityGroup_node_contact['IP']
         port = affinityGroup_node_contact['port']
@@ -80,6 +83,7 @@ class FileUtility:
 
         return home_node
 
+# Endpoint to search the file from database
 class SearchNode(generics.ListAPIView):
     serializer_class = ContactSerializer
 
@@ -88,7 +92,8 @@ class SearchNode(generics.ListAPIView):
         param = self.request.query_params.get('groupID','')
         result = queryset.filter(groupID = param)
         return result
-
+# End point to get the affinity group using the Group ID
+# input : Group ID output : IP and Port of destination node.
 class GetAffinityGroup(APIView,FileUtility):
 
     def get(self,request):
@@ -99,6 +104,8 @@ class GetAffinityGroup(APIView,FileUtility):
         result = serializer(result).data
         return Response(result)
 
+# Endpoint to find the file in the affinity group
+# Input : Filename output : port and IP of destination node which hold file. 
 class GetFiletuple(generics.ListAPIView):
 
     serializer_class = FiletupleSerializer
@@ -108,10 +115,7 @@ class GetFiletuple(generics.ListAPIView):
         result = queryset.filter(fileName = param)
         return result
 
-class Ping(APIView):
-    def get(self,reuest):
-        return HttpResponse(status=200)
-
+# End point to store
 class SaveFile(APIView):
 
     def get(self,request):
@@ -125,7 +129,6 @@ class SaveFile(APIView):
             path_to_file = os.path.join(settings.MEDIA_ROOT,file_name)
             response = FileResponse(open(path_to_file, 'rb'), as_attachment=False)
             return response
-
     def post(self,request):
         serializer = FileUploadSerializer(data = request.data )
         if serializer.is_valid():
@@ -133,6 +136,7 @@ class SaveFile(APIView):
             return HttpResponse(status=201)
         return HttpResponse(status = 500)
 
+# End point to perform the upload operation in the file system.
 class UploadFile(APIView,FileUtility):
     http = "http://"
     path_search_node = "/admin/webapp/search-node/?groupID="
@@ -188,6 +192,8 @@ class UploadFile(APIView,FileUtility):
                         return HttpResponse(status = result.status_code)
         return HttpResponse(status = 500)
 
+#End point to perform the download operation
+# Only get operation is allowed
 class DownloadFile(APIView,FileUtility):
 
     path_save_file = "/admin/webapp/save-file"
