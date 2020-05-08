@@ -1,10 +1,15 @@
-## Efficient and Stable Peer-To-Peer Distributed Hash Table System
+# Efficient and Stable Peer-To-Peer Distributed Hash Table System
 
 This project is based on the following papers: 
 * Distributed Hash Table, **Kelips**: https://www.cs.cornell.edu/home/rvr/papers/Kelips.pdf
 * **Gossip-style Failure Detection**: https://www.cs.cornell.edu/home/rvr/papers/GossipFD.pdf 
 
-### System Setup
+
+## System Architecture
+![System Design](img/architecture.png)
+
+
+## System Setup
 
 * Unzip/Clone project source
 ```
@@ -66,7 +71,7 @@ bootstrapServer/$ python manage.py runserver 0:8000
 
 
 
-### Project Structure
+## Project Structure
 
 * **App/**- Contains application related configurations such as celery setup, url    configs, and app settings. 
 * **quick-store/**-
@@ -86,7 +91,7 @@ bootstrapServer/$ python manage.py runserver 0:8000
 * **Manage.py**- Django manager
 
 
-### System usage
+## System usage
 
 System supports two major operations: File Upload (object insertion) and  File Download (object lookup)
 **Note**: It is recommended to use an API Client (eg. Postman) to hit the required endpoint.
@@ -120,7 +125,7 @@ System supports two major operations: File Upload (object insertion) and  File D
 
  
 
-### Data Operations
+## Data Operations
 
 1. Setup system nodes.
 2. Start the bootstrap server to add nodes into the system using Joining Protocol
@@ -132,7 +137,7 @@ System supports two major operations: File Upload (object insertion) and  File D
 
 
 
-### Failure Detection
+## Failure Detection
 
 1. Run the setup on participating nodes. Start the server on all such nodes.
 2. Add these nodes into the system using node join operation
@@ -146,10 +151,3 @@ After 48 seconds (i.e. 2 * T_fail seconds, T_fail is configured in gossip.yaml),
 - After every Gossip Period, it gossips its updated mem_list to a set of gossip targets to inform other members about its liveliness. These target node selection uses spatial gossip method i.e. nodes that are present closer to the given node are picked for gossip (uses RTT field on mem_list).
 - On receipt, the receiver updates its mem_list against the receieved list and keeping updated records from deletion. It gossips the same list to its target nodes and heartbeat disseminate like a fire in a network.
 - Every node runs a failure detection periodic task using celery and check for last updated timestamp on every member heartbeat.
-
-
-
- 
-
-
-
